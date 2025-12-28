@@ -1,432 +1,305 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ClipboardList, GraduationCap, Send, CheckCircle, User, BookOpen, MessageCircle, ChevronRight, Heart } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>생명과학 I 성찰 기록장</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap');
+        body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-// --- 선생님 설정값 (복사한 웹 앱 URL을 여기에 붙여넣으세요) ---
-const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwgPe8om2d_39iwqW5d1SWpRqXNNDwByYGukflsLbsXGXpvNubF5JQ5CTfWj441TQV5/exec"; 
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-// 성취기준 데이터
-const ACHIEVEMENT_STANDARDS = {
-  "1. 생명과학의 이해": [
-    "생물의 특성과 생물/비생물의 차이",
-    "생명과학의 통합적 특성과 타 학문 연계",
-    "귀납적 탐구와 연역적 탐구 방법 비교"
-  ],
-  "2. 사람의 물질대사": [
-    "세포 호흡과 ATP의 생성 및 이용",
-    "물질대사와 소화·호흡·순환·배설의 관계",
-    "대사성 질환의 원인과 예방 및 생활 습관"
-  ],
-  "3. 항상성과 건강": [
-    "뉴런의 흥분 전도와 시냅스 전달 원리",
-    "활주설에 따른 근수축의 원리",
-    "중추 신경계와 말초 신경계의 구조와 기능",
-    "호르몬에 의한 항상성 유지 원리",
-    "우리 몸의 비특이적/특이적 방어 작용",
-    "항원-항체 반응과 백신의 작용 원리"
-  ],
-  "4. 유전": [
-    "유전자, DNA, 염색체, 유전체의 관계",
-    "세포 분열과 유전적 다양성 획득 원리",
-    "사람의 상염색체 및 성염색체 유전 원리",
-    "염색체 이상 및 유전자 이상 유전병"
-  ],
-  "5. 생태계와 상호 작용": [
-    "개체군과 군집의 특성 및 상호 작용",
-    "군집의 천이 과정과 환경 요인의 영향",
-    "생태계의 에너지 흐름과 물질 순환",
-    "생물다양성의 중요성과 보전 방안"
-  ]
-};
+        const Icons = {
+            ClipboardList: () => (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+            ),
+            GraduationCap: () => (
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            ),
+            BookOpen: ({ size = 18, color = "currentColor" }) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            ),
+            CheckCircle: ({ size = 18 }) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            ),
+            Send: () => (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            ),
+            Heart: () => (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            ),
+            MessageCircle: () => (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            )
+        };
 
-const App = () => {
-  const [step, setStep] = useState('info'); 
-  const [studentInfo, setStudentInfo] = useState({ name: '', studentId: '', classGroup: 'A' });
-  const [selectedUnits, setSelectedUnits] = useState([]);
-  const [selectedSubContents, setSelectedSubContents] = useState({});
-  
-  const [chatHistory, setChatHistory] = useState([]);
-  const [currentUnitIdx, setCurrentUnitIdx] = useState(0);
-  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
-  const [isFinalQuestion, setIsFinalQuestion] = useState(false);
-  const [inputText, setInputText] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const scrollRef = useRef(null);
+        // 여기에 구글 앱스 스크립트 배포 URL을 넣으세요.
+        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzKI5i1BOBaS6a54VPtnK3zbtf9PkWNeTFpjHs78fqfQMBWjJbi-MlStpOZQFUdOCgV/exec"; 
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [chatHistory, step]);
+        const ACHIEVEMENT_STANDARDS = {
+            "1. 생명과학의 이해": ["생물의 특성과 생물/비생물의 차이", "생명과학의 통합적 특성과 타 학문 연계", "귀납적 탐구와 연역적 탐구 방법 비교"],
+            "2. 사람의 물질대사": ["세포 호흡과 ATP의 생성 및 이용", "물질대사와 소화·호흡·순환·배설의 관계", "대사성 질환의 원인과 예방 및 생활 습관"],
+            "3. 항상성과 건강": ["뉴런의 흥분 전도와 시냅스 전달 원리", "활주설에 따른 근수축의 원리", "중추 신경계와 말초 신경계의 구조와 기능", "호르몬에 의한 항상성 유지 원리", "우리 몸의 비특이적/특이적 방어 작용", "항원-항체 반응과 백신의 작용 원리"],
+            "4. 유전": ["유전자, DNA, 염색체, 유전체의 관계", "세포 분열과 유전적 다양성 획득 원리", "사람의 상염색체 및 성염색체 유전 원리", "염색체 이상 및 유전자 이상 유전병"],
+            "5. 생태계와 상호 작용": ["개체군과 군집의 특성 및 상호 작용", "군집의 천이 과정과 환경 요인의 영향", "생태계의 에너지 흐름과 물질 순환", "생물다양성의 중요성과 보전 방안"]
+        };
 
-  useEffect(() => {
-    if (step === 'chat' && chatHistory.length === 0) {
-      const firstUnit = selectedUnits[0];
-      const subContent = selectedSubContents[firstUnit];
-      addBotMessage(`${studentInfo.name} 학생 반가워요! '${firstUnit}' 단원에서 '${subContent}' 내용을 주제로 이야기를 시작해 볼게요.\n\n이 내용을 수업 시간에 공부하면서 특별히 더 집중해서 들었거나, 개념을 완벽히 이해하기 위해 스스로 노력했던 부분이 있다면 무엇인가요?`);
-    }
-  }, [step]);
+        const App = () => {
+            const [step, setStep] = useState('info'); 
+            const [studentInfo, setStudentInfo] = useState({ name: '', studentId: '', classGroup: 'A' });
+            const [selectedUnits, setSelectedUnits] = useState([]);
+            const [selectedSubContents, setSelectedSubContents] = useState({});
+            const [chatHistory, setChatHistory] = useState([]);
+            const [currentUnitIdx, setCurrentUnitIdx] = useState(0);
+            const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
+            const [isFinalQuestion, setIsFinalQuestion] = useState(false);
+            const [inputText, setInputText] = useState('');
+            const [isSubmitting, setIsSubmitting] = useState(false);
+            const scrollRef = useRef(null);
 
-  const addBotMessage = (text) => {
-    setChatHistory(prev => [...prev, { role: 'bot', text }]);
-  };
+            useEffect(() => {
+                if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            }, [chatHistory, step]);
 
-  const startSelectingUnits = () => {
-    if (!studentInfo.name.trim() || !studentInfo.studentId.trim()) {
-      alert("학번과 이름을 모두 입력해 주세요.");
-      return;
-    }
-    setStep('selectUnits');
-  };
+            useEffect(() => {
+                if (step === 'chat' && chatHistory.length === 0) {
+                    const firstUnit = selectedUnits[0];
+                    const subContent = selectedSubContents[firstUnit];
+                    addBotMessage(`${studentInfo.name} 학생 반가워요! '${firstUnit}' 단원에서 '${subContent}' 내용을 주제로 이야기를 시작해 볼게요.\n\n이 내용을 수업 시간에 공부하면서 특별히 더 집중해서 들었거나, 개념을 완벽히 이해하기 위해 스스로 노력했던 부분이 있다면 무엇인가요?`);
+                }
+            }, [step]);
 
-  const toggleUnit = (unit) => {
-    if (selectedUnits.includes(unit)) {
-      setSelectedUnits(selectedUnits.filter(u => u !== unit));
-    } else if (selectedUnits.length < 2) {
-      setSelectedUnits([...selectedUnits, unit]);
-    }
-  };
+            const addBotMessage = (text) => setChatHistory(prev => [...prev, { role: 'bot', text }]);
 
-  const proceedToSubContent = () => {
-    if (selectedUnits.length !== 2) {
-      alert("단원을 2개 선택해 주세요.");
-      return;
-    }
-    setStep('selectSubContent');
-  };
+            const startSelectingUnits = () => {
+                if (!studentInfo.name.trim() || !studentInfo.studentId.trim()) {
+                    alert("학번과 이름을 모두 입력해 주세요.");
+                    return;
+                }
+                setStep('selectUnits');
+            };
 
-  const selectSub = (unit, sub) => {
-    setSelectedSubContents(prev => ({ ...prev, [unit]: sub }));
-  };
+            const toggleUnit = (unit) => {
+                if (selectedUnits.includes(unit)) setSelectedUnits(selectedUnits.filter(u => u !== unit));
+                else if (selectedUnits.length < 2) setSelectedUnits([...selectedUnits, unit]);
+            };
 
-  const startChat = () => {
-    if (Object.keys(selectedSubContents).length < 2) {
-      alert("각 단원별로 세부 내용을 선택해 주세요.");
-      return;
-    }
-    setStep('chat');
-  };
+            const proceedToSubContent = () => {
+                if (selectedUnits.length !== 2) { alert("단원을 2개 선택해 주세요."); return; }
+                setStep('selectSubContent');
+            };
 
-  const getNextQuestion = (unit, qIdx, prevAnswer) => {
-    switch (qIdx) {
-      case 0: 
-        return `교과서 설명만으로는 부족하거나 더 깊이 알고 싶어서 선생님께 질문을 했거나, 스스로 보충 학습을 했던 경험이 있나요? 수업 중 들었던 생각 중 기억에 남는 고민이 있다면 들려주세요.`;
-      case 1: 
-        return `이 주제를 배우고 난 뒤, 생명과학적 원리를 더 잘 이해하게 되었다고 느낀 순간이 있나요? 혹은 다른 단원과 연결되어 이해되었던 경험이 있다면 적어주세요.`;
-      case 2: 
-        return `이 단원을 공부하며 느낀 점을 한 문장으로 정리해 주세요.`;
-      default:
-        return null;
-    }
-  };
+            const selectSub = (unit, sub) => setSelectedSubContents(prev => ({ ...prev, [unit]: sub }));
 
-  const handleSendMessage = async () => {
-    if (!inputText.trim() || isSubmitting) return;
+            const startChat = () => {
+                if (Object.keys(selectedSubContents).length < 2) { alert("각 단원별로 세부 내용을 선택해 주세요."); return; }
+                setStep('chat');
+            };
 
-    const userText = inputText;
-    setChatHistory(prev => [...prev, { role: 'user', text: userText }]);
-    setInputText('');
+            const getNextQuestion = (qIdx) => {
+                const questions = [
+                    "교과서 설명만으로는 부족하거나 더 깊이 알고 싶어서 선생님께 질문을 했거나, 스스로 보충 학습을 했던 경험이 있나요? 수업 중 들었던 생각 중 기억에 남는 고민이 있다면 들려주세요.",
+                    "이 주제를 배우고 난 뒤, 생명과학적 원리를 더 잘 이해하게 되었다고 느낀 순간이 있나요? 혹은 다른 단원과 연결되어 이해되었던 경험이 있다면 적어주세요.",
+                    "이 단원을 공부하며 느낀 점을 한 문장으로 정리해 주세요."
+                ];
+                return questions[qIdx] || null;
+            };
 
-    if (isFinalQuestion) {
-      setIsSubmitting(true);
-      setTimeout(async () => {
-        const success = await saveToSheet([...chatHistory, { role: 'user', text: userText }]);
-        if (success) {
-          addBotMessage("정말 성실하게 답변해 주었네요. 고생 많았습니다! 작성한 내용을 안전하게 제출했어요.");
-          setStep('completed');
-        } else {
-          addBotMessage("서버 전송에 문제가 발생했습니다. (선생님: GOOGLE_SHEET_URL 설정을 확인해 주세요.)");
-          setIsSubmitting(false);
-        }
-      }, 800);
-      return;
-    }
+            const handleSendMessage = async () => {
+                if (!inputText.trim() || isSubmitting) return;
+                const userText = inputText;
+                setChatHistory(prev => [...prev, { role: 'user', text: userText }]);
+                setInputText('');
 
-    const unit = selectedUnits[currentUnitIdx];
-    const nextQ = getNextQuestion(unit, currentQuestionIdx, userText);
-
-    if (nextQ) {
-      setTimeout(() => {
-        addBotMessage(nextQ);
-        setCurrentQuestionIdx(prev => prev + 1);
-      }, 600);
-    } else {
-      if (currentUnitIdx < selectedUnits.length - 1) {
-        setTimeout(() => {
-          const nextUnit = selectedUnits[currentUnitIdx + 1];
-          const nextSub = selectedSubContents[nextUnit];
-          addBotMessage(`좋아요! 다음으로 '${nextUnit}' 단원의 '${nextSub}' 내용에 대해 이야기해 봅시다.\n\n수업 내용을 자기 것으로 만들기 위해 나만의 방식으로 노력한 점이 있다면 무엇인지 들려주세요.`);
-          setCurrentUnitIdx(prev => prev + 1);
-          setCurrentQuestionIdx(0);
-        }, 800);
-      } else {
-        setTimeout(() => {
-          addBotMessage(`이제 마지막이에요! 1년 동안 생명과학 수업을 들으면서 느꼈던 소감이나 선생님께 하고 싶은 말이 있다면 자유롭게 남겨주세요. (수업 방식에 대한 생각도 좋고, 감사 인사도 좋아요!)`);
-          setIsFinalQuestion(true);
-        }, 800);
-      }
-    }
-  };
-
-  const saveToSheet = async (finalHistory) => {
-    if (!GOOGLE_SHEET_URL) {
-      console.log("전송 데이터(URL 미설정):", { studentInfo, selectedSubContents, finalHistory });
-      return false;
-    }
-    
-    const conversation = finalHistory
-      .map(m => `${m.role === 'bot' ? '질문' : '답변'}: ${m.text}`)
-      .join('\n\n');
-
-    const formData = new URLSearchParams();
-    formData.append('class', studentInfo.classGroup);
-    formData.append('studentId', studentInfo.studentId);
-    formData.append('name', studentInfo.name);
-    formData.append('selectedTopics', Object.entries(selectedSubContents).map(([u, s]) => `${u}: ${s}`).join(', '));
-    formData.append('content', conversation);
-    formData.append('date', new Date().toLocaleString('ko-KR'));
-
-    try {
-      // POST 전송 (no-cors 모드는 응답 확인이 어려우므로 성공으로 간주하거나, 단순 호출)
-      await fetch(GOOGLE_SHEET_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formData.toString()
-      });
-      return true;
-    } catch (e) { 
-      console.error(e); 
-      return false;
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans text-slate-900">
-      <div className="w-full max-w-xl bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col h-[90vh] border border-slate-200">
-        
-        {/* Header */}
-        <div className="bg-emerald-600 p-5 text-white flex items-center gap-3 shrink-0">
-          <div className="bg-white/20 p-2 rounded-xl"><ClipboardList size={24} /></div>
-          <div>
-            <h1 className="font-bold">생명과학 I 성찰 기록장</h1>
-            <p className="text-[10px] opacity-80 uppercase tracking-wider font-semibold">Learning Progress Reflection</p>
-          </div>
-        </div>
-
-        {/* Content Area */}
-        <div className="flex-1 overflow-hidden relative flex flex-col bg-slate-50/30">
-          
-          {step === 'info' && (
-            <div className="p-8 flex flex-col items-center justify-center h-full text-center space-y-8 animate-fade-in">
-              <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center rotate-3 shadow-sm">
-                <GraduationCap size={44} />
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-2xl font-extrabold text-slate-800">성찰 기록 시작</h2>
-                <p className="text-slate-500 text-sm leading-relaxed">수업 시간에 배운 내용을 되돌아보며<br/>스스로 고민하고 노력했던 순간을 기록해 보세요.<br/>여러분들의 대답이 길수록 풍성한 생기부를 채워나갈 수 있어요.</p>
-              </div>
-              <div className="w-full space-y-4 max-w-xs">
-                <div className="space-y-3">
-                  <div className="flex items-center bg-white p-1 rounded-2xl border-2 border-slate-100 focus-within:border-emerald-500 transition-all">
-                    <span className="px-4 font-bold text-slate-400 border-r text-sm text-nowrap">반 선택</span>
-                    <select 
-                      className="flex-1 p-3 bg-transparent font-bold outline-none"
-                      value={studentInfo.classGroup}
-                      onChange={e => setStudentInfo({...studentInfo, classGroup: e.target.value})}
-                    >
-                      <option value="A">A반</option>
-                      <option value="B">B반</option>
-                      <option value="C">C반</option>
-                    </select>
-                  </div>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" placeholder="학번(예: 20101)" 
-                      className="w-2/3 p-4 bg-white border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-emerald-500 text-center"
-                      value={studentInfo.studentId}
-                      onChange={e => setStudentInfo({...studentInfo, studentId: e.target.value})}
-                    />
-                    <input 
-                      type="text" placeholder="이름" 
-                      className="w-1/3 p-4 bg-white border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-emerald-500 text-center"
-                      value={studentInfo.name}
-                      onChange={e => setStudentInfo({...studentInfo, name: e.target.value})}
-                    />
-                  </div>
-                </div>
-                <button 
-                  onClick={startSelectingUnits}
-                  className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl shadow-lg hover:bg-emerald-700 active:scale-95 transition-all"
-                >
-                  다음 단계로
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 'selectUnits' && (
-            <div className="p-8 flex flex-col h-full animate-fade-in">
-              <div className="mb-6 text-center">
-                <h3 className="text-lg font-bold text-slate-800">이야기할 단원 2개 선택</h3>
-                <p className="text-xs text-slate-500 mt-1">내가 가장 집중해서 들었거나 흥미로웠던 단원을 골라보세요.</p>
-              </div>
-              <div className="flex-1 space-y-3 overflow-y-auto pr-1">
-                {Object.keys(ACHIEVEMENT_STANDARDS).map(unit => (
-                  <button 
-                    key={unit}
-                    onClick={() => toggleUnit(unit)}
-                    className={`w-full p-4 rounded-2xl border-2 transition-all flex items-center justify-between text-left ${
-                      selectedUnits.includes(unit) 
-                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm' 
-                        : 'border-slate-100 bg-white hover:border-slate-200 shadow-sm'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <BookOpen size={18} className={selectedUnits.includes(unit) ? 'text-emerald-500' : 'text-slate-400'} />
-                      <span className="font-bold text-sm">{unit}</span>
-                    </div>
-                    {selectedUnits.includes(unit) && <CheckCircle size={18} />}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-6 flex flex-col items-center gap-2">
-                <p className="text-xs font-bold text-emerald-600">{selectedUnits.length} / 2 선택됨</p>
-                <button 
-                  disabled={selectedUnits.length !== 2}
-                  onClick={proceedToSubContent}
-                  className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl shadow-md disabled:bg-slate-200 transition-all"
-                >
-                  세부 내용 선택하기
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 'selectSubContent' && (
-            <div className="p-8 flex flex-col h-full animate-fade-in">
-              <div className="mb-6 text-center">
-                <h3 className="text-lg font-bold text-slate-800">어떤 내용을 중점적으로 공부했나요?</h3>
-                <p className="text-xs text-slate-500 mt-1">단원별 성취기준 중 하나를 선택하세요.</p>
-              </div>
-              <div className="flex-1 space-y-6 overflow-y-auto pr-1">
-                {selectedUnits.map(unit => (
-                  <div key={unit} className="space-y-3">
-                    <h4 className="text-xs font-extrabold text-emerald-600 flex items-center gap-2 bg-emerald-50 w-fit px-2 py-1 rounded-md">
-                      {unit}
-                    </h4>
-                    <div className="grid grid-cols-1 gap-2">
-                      {ACHIEVEMENT_STANDARDS[unit].map(sub => (
-                        <button 
-                          key={sub}
-                          onClick={() => selectSub(unit, sub)}
-                          className={`w-full p-3 text-xs rounded-xl border-2 text-left transition-all ${
-                            selectedSubContents[unit] === sub
-                              ? 'border-emerald-500 bg-emerald-50 font-bold text-emerald-700'
-                              : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200 shadow-sm'
-                          }`}
-                        >
-                          {sub}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-6">
-                <button 
-                  disabled={Object.keys(selectedSubContents).length < 2}
-                  onClick={startChat}
-                  className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl shadow-md disabled:bg-slate-200 transition-all"
-                >
-                  성찰 답변 시작하기
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 'chat' && (
-            <>
-              <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
-                {chatHistory.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.role === 'bot' ? 'justify-start' : 'justify-end'} animate-fade-in`}>
-                    <div className={`flex items-start gap-2 max-w-[85%]`}>
-                      {msg.role === 'bot' && (
-                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 mt-1">
-                          {isFinalQuestion ? <Heart size={16} fill="currentColor" /> : <MessageCircle size={16} />}
-                        </div>
-                      )}
-                      <div className={`px-4 py-3 rounded-2xl text-[13px] leading-relaxed shadow-sm ${
-                        msg.role === 'bot' 
-                        ? 'bg-white text-slate-800 rounded-tl-none border border-slate-100' 
-                        : 'bg-emerald-600 text-white rounded-tr-none'
-                      }`}>
-                        {msg.text.split('\n').map((line, j) => <p key={j} className={j > 0 ? "mt-1" : ""}>{line}</p>)}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {isSubmitting && (
-                  <div className="flex justify-start">
-                    <div className="bg-white px-4 py-2 rounded-full text-[11px] text-slate-400 italic flex items-center gap-2 shadow-sm border border-slate-100">
-                      <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></div>
-                      기록을 서버에 저장하는 중... 잠시만 기다려 주세요.
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              <div className="p-4 bg-white border-t border-slate-100 flex gap-2 items-end">
-                <textarea 
-                  rows="2"
-                  disabled={isSubmitting}
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none disabled:opacity-50"
-                  placeholder={isFinalQuestion ? "선생님께 전하고 싶은 말을 적어보세요..." : "답변을 입력해 주세요..."}
-                  value={inputText}
-                  onChange={e => setInputText(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
+                if (isFinalQuestion) {
+                    setIsSubmitting(true);
+                    const success = await saveToSheet([...chatHistory, { role: 'user', text: userText }]);
+                    if (success) {
+                        addBotMessage("정말 성실하게 답변해 주었네요. 고생 많았습니다! 작성한 내용을 안전하게 제출했어요.");
+                        setStep('completed');
+                    } else {
+                        addBotMessage("서버 전송에 실패했습니다. 하지만 걱정 마세요! 작성하신 내용을 복사하여 선생님께 따로 제출하실 수 있습니다.");
+                        setIsSubmitting(false);
                     }
-                  }}
-                />
-                <button 
-                  onClick={handleSendMessage}
-                  disabled={!inputText.trim() || isSubmitting}
-                  className="bg-emerald-600 text-white p-3 rounded-xl shadow-lg disabled:bg-slate-200 transition-all"
-                >
-                  <Send size={20} />
-                </button>
-              </div>
-            </>
-          )}
+                    return;
+                }
 
-          {step === 'completed' && (
-            <div className="p-8 flex flex-col items-center justify-center h-full text-center space-y-6 animate-fade-in">
-              <div className="w-24 h-24 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center shadow-inner">
-                <CheckCircle size={56} />
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-2xl font-bold text-slate-800">성찰 제출 완료!</h2>
-                <p className="text-slate-500 text-sm leading-relaxed">
-                  {studentInfo.classGroup}반 {studentInfo.name} 학생,<br/>
-                  수업 시간에 기울인 노력과 소중한 소감이 시트로 전송되었습니다.<br/>
-                  선생님께서 정성껏 읽어보실 거예요. 고생했어요!
-                </p>
-              </div>
-              <button 
-                onClick={() => window.location.reload()}
-                className="px-8 py-3 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-50 transition-all"
-              >
-                다시 작성하기
-              </button>
-            </div>
-          )}
+                const nextQ = getNextQuestion(currentQuestionIdx);
+                if (nextQ) {
+                    setTimeout(() => { addBotMessage(nextQ); setCurrentQuestionIdx(prev => prev + 1); }, 600);
+                } else {
+                    if (currentUnitIdx < selectedUnits.length - 1) {
+                        setTimeout(() => {
+                            const nextUnit = selectedUnits[currentUnitIdx + 1];
+                            addBotMessage(`좋아요! 다음으로 '${nextUnit}' 단원의 '${selectedSubContents[nextUnit]}' 내용에 대해 이야기해 봅시다.\n\n수업 내용을 자기 것으로 만들기 위해 나만의 방식으로 노력한 점이 있다면 무엇인지 들려주세요.`);
+                            setCurrentUnitIdx(prev => prev + 1);
+                            setCurrentQuestionIdx(0);
+                        }, 800);
+                    } else {
+                        setTimeout(() => {
+                            addBotMessage(`이제 마지막이에요! 1년 동안 생명과학 수업을 들으면서 느꼈던 소감이나 선생님께 하고 싶은 말이 있다면 자유롭게 남겨주세요.`);
+                            setIsFinalQuestion(true);
+                        }, 800);
+                    }
+                }
+            };
 
-        </div>
-      </div>
-    </div>
-  );
-};
+            const saveToSheet = async (finalHistory) => {
+                const conversation = finalHistory.map(m => `${m.role === 'bot' ? '질문' : '답변'}: ${m.text}`).join('\n\n');
+                const params = new URLSearchParams({
+                    'class': studentInfo.classGroup,
+                    'studentId': studentInfo.studentId,
+                    'name': studentInfo.name,
+                    'selectedTopics': Object.entries(selectedSubContents).map(([u, s]) => `${u}: ${s}`).join(', '),
+                    'content': conversation,
+                    'date': new Date().toLocaleString('ko-KR')
+                });
 
-export default App;
+                try {
+                    // mode: 'no-cors'를 사용할 경우 성공 여부를 확인할 수 없으므로, GAS에서 리디렉션이나 올바른 헤더 설정이 중요합니다.
+                    await fetch(GOOGLE_SHEET_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: params.toString()
+                    });
+                    // no-cors 모드는 결과값을 읽을 수 없으므로 일단 성공으로 간주하거나, 
+                    // 실제 전송 시간을 고려해 약간의 지연 후 성공 페이지로 넘깁니다.
+                    return true;
+                } catch (e) {
+                    console.error("Submission error:", e);
+                    return false;
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center p-4">
+                    <div className="w-full max-w-xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col h-[90vh] border border-slate-200">
+                        {/* Header */}
+                        <div className="bg-emerald-600 p-5 text-white flex items-center gap-3 shrink-0 shadow-lg">
+                            <div className="bg-white/20 p-2 rounded-xl"><Icons.ClipboardList /></div>
+                            <div>
+                                <h1 className="font-bold text-lg">생명과학 I 성찰 기록장</h1>
+                                <p className="text-[10px] opacity-80 uppercase tracking-wider font-semibold leading-tight">Learning Progress Reflection</p>
+                            </div>
+                        </div>
+
+                        {/* Content Area */}
+                        <div className="flex-1 overflow-hidden relative flex flex-col bg-slate-50/50">
+                            {step === 'info' && (
+                                <div className="p-8 flex flex-col items-center justify-center h-full text-center space-y-8 animate-fade-in">
+                                    <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center rotate-3 shadow-sm"><Icons.GraduationCap /></div>
+                                    <div className="space-y-2">
+                                        <h2 className="text-2xl font-black text-slate-800">성찰 기록 시작</h2>
+                                        <p className="text-slate-500 text-sm leading-relaxed">수업 시간에 배운 내용을 되돌아보며<br/>스스로 고민하고 노력했던 순간을 기록해 보세요.<br/>성실하게 대답을 할 수록 여러분의 생기부가 풍성해질 수도 있습니다.<br/>지금 바로 시작하세요./>성/
+                                    </div>
+                                    <div className="w-full space-y-4 max-w-xs">
+                                        <div className="bg-white p-1 rounded-2xl border-2 border-slate-100 focus-within:border-emerald-500 transition-all flex items-center">
+                                            <span className="px-4 font-bold text-slate-400 border-r text-sm">반</span>
+                                            <select className="flex-1 p-3 bg-transparent font-bold outline-none" value={studentInfo.classGroup} onChange={e => setStudentInfo({...studentInfo, classGroup: e.target.value})}>
+                                                <option value="A">A반</option>
+                                                <option value="B">B반</option>
+                                                <option value="C">C반</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <input type="text" placeholder="학번" className="w-2/3 p-4 bg-white border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-emerald-500 text-center" value={studentInfo.studentId} onChange={e => setStudentInfo({...studentInfo, studentId: e.target.value})} />
+                                            <input type="text" placeholder="이름" className="w-1/3 p-4 bg-white border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-emerald-500 text-center" value={studentInfo.name} onChange={e => setStudentInfo({...studentInfo, name: e.target.value})} />
+                                        </div>
+                                        <button onClick={startSelectingUnits} className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl shadow-lg hover:bg-emerald-700 active:scale-95 transition-all mt-4">시작하기</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {step === 'selectUnits' && (
+                                <div className="p-8 flex flex-col h-full animate-fade-in">
+                                    <div className="mb-6 text-center"><h3 className="text-lg font-bold text-slate-800">단원 2개 선택</h3><p className="text-xs text-slate-500">가장 집중했거나 흥미로웠던 단원을 고르세요.</p></div>
+                                    <div className="flex-1 space-y-3 overflow-y-auto custom-scroll pr-1">
+                                        {Object.keys(ACHIEVEMENT_STANDARDS).map(unit => (
+                                            <button key={unit} onClick={() => toggleUnit(unit)} className={`w-full p-4 rounded-2xl border-2 transition-all flex items-center justify-between text-left ${selectedUnits.includes(unit) ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm' : 'border-white bg-white hover:border-slate-200'}`}>
+                                                <div className="flex items-center gap-3"><Icons.BookOpen size={18} color={selectedUnits.includes(unit) ? "#10b981" : "#94a3b8"} /><span className="font-bold text-sm">{unit}</span></div>
+                                                {selectedUnits.includes(unit) && <Icons.CheckCircle size={18} />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="mt-6"><button disabled={selectedUnits.length !== 2} onClick={proceedToSubContent} className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl shadow-md disabled:bg-slate-200 transition-all">내용 선택하기 ({selectedUnits.length}/2)</button></div>
+                                </div>
+                            )}
+
+                            {step === 'selectSubContent' && (
+                                <div className="p-8 flex flex-col h-full animate-fade-in">
+                                    <div className="mb-6 text-center"><h3 className="text-lg font-bold text-slate-800">세부 내용 선택</h3><p className="text-xs text-slate-500">단원별로 중점적으로 공부한 내용을 선택하세요.</p></div>
+                                    <div className="flex-1 space-y-6 overflow-y-auto custom-scroll pr-1">
+                                        {selectedUnits.map(unit => (
+                                            <div key={unit} className="space-y-2">
+                                                <h4 className="text-xs font-extrabold text-emerald-600 bg-emerald-50 w-fit px-2 py-1 rounded-md">{unit}</h4>
+                                                <div className="grid gap-2">
+                                                    {ACHIEVEMENT_STANDARDS[unit].map(sub => (
+                                                        <button key={sub} onClick={() => selectSub(unit, sub)} className={`w-full p-3.5 text-xs rounded-xl border-2 text-left transition-all ${selectedSubContents[unit] === sub ? 'border-emerald-500 bg-emerald-50 font-bold text-emerald-700' : 'border-white bg-white text-slate-500 hover:border-slate-200 shadow-sm'}`}>{sub}</button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="mt-6"><button disabled={Object.keys(selectedSubContents).length < 2} onClick={startChat} className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl shadow-md disabled:bg-slate-200 transition-all">답변 시작하기</button></div>
+                                </div>
+                            )}
+
+                            {step === 'chat' && (
+                                <>
+                                    <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 custom-scroll">
+                                        {chatHistory.map((msg, i) => (
+                                            <div key={i} className={`flex ${msg.role === 'bot' ? 'justify-start' : 'justify-end'} animate-fade-in`}>
+                                                <div className="flex items-start gap-2 max-w-[85%]">
+                                                    {msg.role === 'bot' && <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 mt-1">{isFinalQuestion ? <Icons.Heart /> : <Icons.MessageCircle />}</div>}
+                                                    <div className={`px-4 py-3 rounded-2xl text-[13px] leading-relaxed shadow-sm ${msg.role === 'bot' ? 'bg-white text-slate-800 rounded-tl-none border border-slate-100' : 'bg-emerald-600 text-white rounded-tr-none'}`}>
+                                                        {msg.text.split('\n').map((line, j) => <p key={j} className={j > 0 ? "mt-1.5" : ""}>{line}</p>)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {isSubmitting && <div className="flex justify-start animate-pulse"><div className="bg-white border border-slate-100 px-4 py-2 rounded-2xl text-xs text-slate-400">데이터 전송 중... 잠시만 기다려 주세요.</div></div>}
+                                    </div>
+                                    <div className="p-4 bg-white border-t border-slate-100 flex gap-2 items-end shrink-0">
+                                        <textarea rows="2" disabled={isSubmitting} className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-sm outline-none focus:border-emerald-500 transition-all resize-none disabled:opacity-50" placeholder="메시지를 입력하세요..." value={inputText} onChange={e => setInputText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }} />
+                                        <button onClick={handleSendMessage} disabled={!inputText.trim() || isSubmitting} className="bg-emerald-600 text-white p-3.5 rounded-2xl shadow-lg disabled:bg-slate-200 active:scale-95 transition-all"><Icons.Send /></button>
+                                    </div>
+                                </>
+                            )}
+
+                            {step === 'completed' && (
+                                <div className="p-8 flex flex-col items-center justify-center h-full text-center space-y-8 animate-fade-in">
+                                    <div className="w-24 h-24 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center shadow-inner ring-8 ring-emerald-50/50"><Icons.CheckCircle size={56} /></div>
+                                    <div className="space-y-2">
+                                        <h2 className="text-2xl font-bold text-slate-800">제출 완료!</h2>
+                                        <p className="text-slate-500 text-sm leading-relaxed">정성스럽게 작성한 성찰 기록이<br/>선생님께 안전하게 전송되었습니다. 수고 많았어요!</p>
+                                    </div>
+                                    <button onClick={() => window.location.reload()} className="px-10 py-3.5 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-50 transition-all">처음으로</button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
